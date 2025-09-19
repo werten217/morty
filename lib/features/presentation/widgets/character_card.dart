@@ -7,11 +7,7 @@ class CharacterCard extends StatelessWidget {
   final Character character;
   final VoidCallback onTap;
 
-  const CharacterCard({
-    Key? key,
-    required this.character,
-    required this.onTap,
-  }) : super(key: key);
+  const CharacterCard({Key? key, required this.character, required this.onTap}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -21,30 +17,24 @@ class CharacterCard extends StatelessWidget {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
         ),
-        elevation: 4,
+        elevation: 6,
+        shadowColor: Colors.black26,
+        clipBehavior: Clip.antiAlias,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
-          mainAxisSize: MainAxisSize.min,
           children: [
             Hero(
               tag: 'character_${character.id}',
-              child: ClipRRect(
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(AppDimensions.cardRadius),
-                ),
-                child: Image.network(
-                  character.image,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-
-                ),
+              child: Image.network(
+                character.image,
+                height: AppDimensions.imageHeight,
+                fit: BoxFit.cover,
               ),
             ),
             Padding(
               padding: const EdgeInsets.all(AppDimensions.paddingMedium),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
                     character.name,
@@ -56,8 +46,6 @@ class CharacterCard extends StatelessWidget {
                   Text(
                     '${character.species} • ${character.status}',
                     style: AppTextStyles.subtitle,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),
@@ -68,6 +56,7 @@ class CharacterCard extends StatelessWidget {
     );
   }
 }
+
 
 
 

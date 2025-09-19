@@ -1,6 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:morty/screen/characters_screen.dart';
-import 'core/theme/styles.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'features/presentation/cubit/favorite_cubit.dart';
+import 'screen/characters_screen.dart';
+
+import 'core/network/dio_client.dart';
+import 'features/characters/data/datasource/character_api.dart';
+import 'features/characters/data/repository/character_repository_impl.dart';
+import 'features/characters/data/repository/favorites_repository.dart';
+import 'features/presentation/cubit/characters_cubit.dart';
 
 void main() {
   runApp(const MyApp());
@@ -11,20 +18,26 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Rick and Morty',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        primaryColor: AppColors.primary,
-        scaffoldBackgroundColor: AppColors.background,
-        appBarTheme: const AppBarTheme(
-          backgroundColor: AppColors.primary,
-          foregroundColor: Colors.white,
+    final dioClient = DioClient();
+    final characterApi = CharacterApi(dioClient.dio);
+    final charactersRepository = CharacterRepositoryImpl(characterApi);
+    final favoritesRepository = FavoritesRepository();
+
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(
+          create: (_) => CharactersCubit(repository: charactersRepository)..loadInitial(),
         ),
+        BlocProvider(
+          create: (_) => FavoritesCubit(favoritesRepository: favoritesRepository)..loadFavorites(),
+        ),
+      ],
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        title: 'Rick & Morty',
+        theme: ThemeData(primarySwatch: Colors.blue),
+        home: const CharactersScreen(),
       ),
-      home: const CharactersScreen(),
     );
   }
 }
-
-
