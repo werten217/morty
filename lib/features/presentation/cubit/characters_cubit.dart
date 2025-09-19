@@ -63,3 +63,4 @@ class CharactersCubit extends Cubit<CharactersState> {
     }
   }
 }
+

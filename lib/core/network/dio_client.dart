@@ -15,3 +15,4 @@ class DioClient {
     dio.interceptors.add(LogInterceptor(requestBody: true, responseBody: true));
   }
 }
+

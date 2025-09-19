@@ -5,7 +5,6 @@ sealed class CharactersState {
 }
 
 final class CharactersInitial extends CharactersState {}
-
 final class CharactersLoading extends CharactersState {}
 
 final class CharactersLoaded extends CharactersState {
@@ -40,3 +39,4 @@ final class CharactersError extends CharactersState {
   final String message;
   const CharactersError(this.message);
 }
+

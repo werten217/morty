@@ -4,6 +4,7 @@ import '../model/characters_page_model.dart';
 
 class CharacterApi {
   final Dio dio;
+
   CharacterApi(this.dio);
 
   Future<CharactersPageModel> fetchCharactersPage(int page) async {
@@ -17,3 +18,4 @@ class CharacterApi {
     }
   }
 }
+

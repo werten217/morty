@@ -3,93 +3,123 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../core/network/dio_client.dart';
 import '../features/characters/data/datasource/character_api.dart';
 import '../features/characters/data/repository/character_repository_impl.dart';
-import '../core/theme/styles.dart';
 import '../features/presentation/cubit/characters_cubit.dart';
 import '../features/presentation/widgets/character_card.dart';
+import 'character_detail_screen.dart';
 
 class CharactersScreen extends StatefulWidget {
-  const CharactersScreen({Key? key}) : super(key: key);
+  const CharactersScreen({super.key});
 
   @override
   State<CharactersScreen> createState() => _CharactersScreenState();
 }
 
 class _CharactersScreenState extends State<CharactersScreen> {
-  late final CharactersCubit _cubit;
-  late final ScrollController _scrollController;
-
-  @override
-  void initState() {
-    super.initState();
-
-    final dioClient = DioClient();
-    final api = CharacterApi(dioClient.dio);
-    final repository = CharacterRepositoryImpl(api);
-
-    _cubit = CharactersCubit(repository: repository);
-    _cubit.loadInitial();
-
-    _scrollController = ScrollController()
-      ..addListener(() {
-        if (_scrollController.position.pixels >=
-            (_scrollController.position.maxScrollExtent - 200)) {
-          _cubit.loadMore();
-        }
-      });
-  }
+  final TextEditingController _searchController = TextEditingController();
+  String _searchText = '';
 
   @override
   void dispose() {
-    _scrollController.dispose();
-    _cubit.close();
+    _searchController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider<CharactersCubit>.value(
-      value: _cubit,
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Rick and Morty'),
-          backgroundColor: AppColors.primary,
+
+    final dioClient = DioClient();
+    final characterApi = CharacterApi(dioClient.dio);
+    final repository = CharacterRepositoryImpl(characterApi);
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Characters'),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(50),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                hintText: 'Search by name...',
+                prefixIcon: const Icon(Icons.search),
+                filled: true,
+                fillColor: Colors.white,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(30),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+              onChanged: (value) {
+                setState(() {
+                  _searchText = value.toLowerCase();
+                });
+              },
+            ),
+          ),
         ),
-        body: BlocBuilder<CharactersCubit, CharactersState>(
+      ),
+      body: BlocProvider(
+        create: (context) =>
+        CharactersCubit(repository: repository)..loadInitial(),
+        child: BlocBuilder<CharactersCubit, CharactersState>(
           builder: (context, state) {
             if (state is CharactersLoading) {
               return const Center(child: CircularProgressIndicator());
             } else if (state is CharactersLoaded) {
-              final items = state.characters;
-              return Column(
-                children: [
-                  Expanded(
-                    child: GridView.builder(
-                      controller: _scrollController,
-                      padding: const EdgeInsets.all(12),
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        crossAxisSpacing: 12,
-                        mainAxisSpacing: 12,
-                        childAspectRatio: 0.72,
-                      ),
-                      itemCount: items.length,
-                      itemBuilder: (context, index) {
-                        return CharacterCard(character: items[index]);
-                      },
-                    ),
+
+              final characters = _searchText.isEmpty
+                  ? state.characters
+                  : state.characters
+                  .where((c) =>
+                  c.name.toLowerCase().contains(_searchText))
+                  .toList();
+
+              return NotificationListener<ScrollNotification>(
+                onNotification: (notification) {
+                  if (notification.metrics.pixels >=
+                      notification.metrics.maxScrollExtent - 200 &&
+                      !state.isLoadingMore &&
+                      state.hasNext) {
+                    context.read<CharactersCubit>().loadMore();
+                  }
+                  return false;
+                },
+                child: GridView.builder(
+                  padding: const EdgeInsets.all(16),
+                  gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                    maxCrossAxisExtent: 200,
+                    mainAxisSpacing: 16,
+                    crossAxisSpacing: 16,
+                    childAspectRatio: 0.65,
                   ),
-                  if (state.isLoadingMore)
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 8),
-                      child: Center(child: CircularProgressIndicator()),
-                    ),
-                ],
+                  itemCount: characters.length + (state.hasNext ? 1 : 0),
+                  itemBuilder: (context, index) {
+                    if (index < characters.length) {
+                      final character = characters[index];
+                      return CharacterCard(
+                        character: character,
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => CharacterDetailScreen(character: character),
+                            ),
+                          );
+                        },
+                      );
+                    } else {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                  },
+                ),
+
               );
             } else if (state is CharactersError) {
-              return Center(child: Text('Ошибка: ${state.message}'));
-            } else {
-              return const SizedBox.shrink();
+              return Center(child: Text(state.message));
             }
+            return const SizedBox.shrink();
           },
         ),
       ),
